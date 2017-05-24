@@ -45,9 +45,11 @@ typedef struct SensitivityEventStorage{
   double true_total_energy_;
   
   // Get vertex position of up to two tracks in mm
-  double first_vertex_x_; // Foil is at x ~ 0
-  double first_vertex_y_;
-  double first_vertex_z_;
+  double first_vertex_x_; // Foil is at x ~ 0, main calo walls are at +/- 434.994 mm according to flvisualize
+  double first_vertex_y_; // y direction is horizontal, parallel to the foil, you can see it in top view
+  // Foil goes from roughly y = -2500 to 2500mm (look up the actual values), the where we get x-calo blocks
+  double first_vertex_z_; // z direction is vertical, parallel to the wires, you can see it in side view
+  // edges of foil are about z= -1300 to 1300mm (don't have exact numbers right now)
   double second_vertex_x_;
   double second_vertex_y_;
   double second_vertex_z_;
@@ -70,14 +72,28 @@ typedef struct SensitivityEventStorage{
   
   double vertex_separation_; // How far apart are their vertices (the ones nearest the foil)
   double foil_projection_separation_; // How far apart would the vertices be if the tracks were projected back to the foil? Sometimes a track will not be reconstructed all the way back even if it really was from the foil
-  int vertices_on_foil_; // How many tracks included a vertex on the foil?
-  int first_vertices_on_foil_; // How many tracks had their FIRST vertex on the foil?
   
+  double projection_distance_xy_; // Distance between the end of the track and the foil projected vertex, in the xy plane (ie ignoring distance along wires - gives an indication of how many hits were missed). There are 2 tracks in a good event, and we want the longer of the two distances.
+  int vertices_on_foil_; // How many tracks included a vertex on the foil?
+  int first_vertices_on_foil_; // How many tracks had their FIRST vertex on the foil? OBSOLETE/USELESS
+  
+  // For calculating probability of an  internal/external topology
   double time_delay_;
   double internal_probability_;
-  double internal_chi_squared_;
+  double internal_chi_squared_; // No longer used, was for validation of calculation
   double external_probability_;
-  double external_chi_squared_;
+  double external_chi_squared_; // No longer used, was for validation of calculation
+  
+  // These might help where the clusterer cannot reconstruct tracks all the way to the foil
+  double foil_projected_internal_probability_;
+  double foil_projected_external_probability_;
+  
+  // Debug information
+  double calorimeter_hit_count_; // How many calorimeter hits over threshold?
+  double cluster_count_; // How many clusters with 3 or more hits?
+  double small_cluster_count_; // How many clusters with 2 hits?
+  double third_calo_energy_; // Energy of third calorimeter hit (if any)
+  double edgemost_vertex_;
 
 }sensitivityeventstorage;
 
@@ -109,6 +125,7 @@ class SensitivityModule : public dpp::base_module {
   TruthEventStorage truth_;
   
   double ProbabilityFromChiSquared(double chiSquared);
+  void CalculateProbabilities(double &internalProbability, double &externalProbability, double *calorimeterEnergies, double *calorimeterEnergySigmas, double *trackLengths, double *calorimeterTimes, double *calorimeterTimeSigmas);
   
   // Macro which automatically creates the interface needed
   // to enable the module to be loaded at runtime
