@@ -1,0 +1,4 @@
+Common analysis modules for use in all NEMO-3 analyses.
+
+NemoMods contains modules that do things like find alphas, gammas, 
+NemoObjects

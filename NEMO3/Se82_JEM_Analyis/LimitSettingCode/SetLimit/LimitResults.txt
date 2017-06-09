@@ -1,0 +1,18 @@
+Window (Helene) Method:
+Expected: BG = 12.0965	Data = 12	Sig < 7.066	Eff = 8.1815%	 Halflife > 2.88671 x 10^23 yrs
+Observed: BG = 12.0965	Data = 15	Sig < 9.678	Eff = 8.1815%	 Halflife > 2.10762 x 10^23 yrs
+
+TLimit Method:
+Expected: Events < 7.09422	Eff = 9.79985%	 Halflife > 3.44396 x 10^23 yrs
+Observed: Events < 9.62161	Eff = 9.79985%	 Halflife > 2.53931 x 10^23 yrs
+
+Collie Method:
+Efficiency = 9.79985%
+Stat-only Expected:     Events < 7.11325	 Halflife > 3.43475 x 10^23 yrs
+Stat-only Observed:     Events < 9.64514	 Halflife > 2.53312 x 10^23 yrs
+Syst -2 Sigma Expected: Events < 3.9184	 Halflife > 6.23526 x 10^23 yrs
+Syst -1 Sigma Expected: Events < 5.07618	 Halflife > 4.81311 x 10^23 yrs
+Syst  0 Sigma Expected: Events < 7.23669	 Halflife > 3.37616 x 10^23 yrs
+Syst +1 Sigma Expected: Events < 10.6867	 Halflife > 2.28623 x 10^23 yrs
+Syst +2 Sigma Expected: Events < 15.4499	 Halflife > 1.58138 x 10^23 yrs
+Syst  0 Sigma Observed: Events < 9.82911	 Halflife > 2.4857 x 10^23 yrs
