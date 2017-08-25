@@ -38,21 +38,29 @@ CMakeLists.txt will build it on my Mac; I don’t guarantee (or even expect) it 
 This is the structure of the tuple that it makes:
 
 
+sensitivity.total_calorimeter_energy : Summed energy of all reconstructed calorimeter hits (CD bank)
+
 sensitivity.passes_two_calorimeters : True if there are exactly 2 reconstructed calorimeter hits over 50 keV, of which at least 1 is over 150keV (CD bank)
+
+sensitivity.passes_two_plus_calos :True if there are at least 2 reconstructed calorimeter hits over 50 keV, of which at least 1 is over 150keV (CD bank)
 
 sensitivity.passes_two_clusters : True if there are exactly two reconstructed clusters with 3 or more hits (TCD bank)
 
 sensitivity.passes_two_tracks : True if there are exactly two reconstructed tracks (TTD bank)
 
-sensitivity.passes_associated_calorimeters : True if passes_two_calorimeters and passes_two_calorimeters  AND each of those two hits is associated to a separate track. In future I plan to remove the restriction of the 2 calorimeters and 2 tracks, but it is currently in place. (PTD bank)
+sensitivity.passes_associated_calorimeters : True if there are exactly two tracks, and they are both associated to one or more calorimeter hits. Equivalent (at the moment to a 2-electron topology)
 
-sensitivity.number_of_electrons : Number of tracks with a negative charge. Only set when we have two tracks and two calorimeter hits (that does not need to be the case, we could move it). (PTD bank)
+sensitivity.number_of_electrons : Number of electron-candidate tracks - that is, tracks that are associated to one or more calorimeter hits. No check on the charge as of yet. No requirement for a foil vertex. (PTD bank)
 
-sensitivity.total_calorimeter_energy : Summed energy of all reconstructed calorimeter hits (CD bank)
+sensitivity.number_of_gammas : Number of gamma candidates - when calorimeter hits that aren’t associated to tracks have been grouped by the gamma tracko-clustering algorithm to correspond to what appear to be individual gammas (PTD bank)
 
-sensitivity.higher_electron_energy :  Highest reconstructed calorimeter energy - not necessarily actually from an electron (CD bank)
+sensitivity.higher_electron_energy : Energy of the highest-energy electron candidate, summed over all associated calorimeter hits (at the moment I don’t think more than 1 hit is allowed, but that could change in future). 0 if no electron candidates. Corresponds to sensitivity.electron_energies[0].
 
-sensitivity.lower_electron_energy : Second-highest reconstructed calorimeter energy - not necessarily actually from an electron (CD bank)
+sensitivity.lower_electron_energy : Energy of the second-highest-energy electron candidate, summed over all associated calorimeter hits (at the moment I don’t think more than 1 hit is allowed, but that could change in future). 0 if less than 2 electron candidates. Corresponds to sensitivity.electron_energies[1].
+
+sensitivity.electron_energies : Vector of all electron-candidate energies. In descending order of energy.
+
+sensitivity.gamma_energies : Vector of all electron-candidate energies. In descending order of energy.
                                
 sensitivity.true_higher_electron_energy :  Same as true_highest_primary_energy
                         
@@ -76,45 +84,65 @@ sensitivity.second_vertex_y :  If there are two tracks, vertex y position of an 
 
 sensitivity.second_vertex_z : If there are two tracks, vertex z position of an arbitrary “2nd” track. The z direction is vertical, parallel to the wires, you can see it in side view. Unit is mm.
 
-sensitivity.vertex_separation : Distance between the inner-most (nearest to the foil) vertices of the two tracks (only if there are 2 tracks).  Unit is mm.
+sensitivity.vertex_separation : Distance between the inner-most (nearest to the foil) vertices of the two tracks (only if there are 2 electron candidates).  Unit is mm.
 
 sensitivity.first_projected_vertex_y
 sensitivity.first_projected_vertex_z
 sensitivity.second_projected_vertex_y
-sensitivity.second_projected_vertex_z: Only if there are 2 tracks. If both tracks were linearly projected back to the foil (x=0), these would be their y and z coordinates.  Unit is mm.
+sensitivity.second_projected_vertex_z: Only for 2-electron or 1e-n-gamma topologies. If both tracks were linearly projected back to the foil (x=0), these would be their y and z coordinates.  Unit is mm.
 
-sensitivity.foil_projection_separation : Only if there are 2 tracks. If both tracks were linearly projected back to the foil, this is the distance between where the tracks intersect the foil.  Unit is mm.
+sensitivity.foil_projection_separation : Only if there are 2 electron candidates. If both tracks were linearly projected back to the foil, this is the distance between where the tracks intersect the foil.  Unit is mm.
+
+sensitivity.projection_distance_xy : How far in the xy plane we had to project our longest-projected track. Proxy for how many cells we are claiming to have a track, but where we didn’t reconstruct a hit. Could be replaced by a mapping of broken cells etc.
 
 sensitivity.vertices_on_foil : If 2 tracks: number of tracks with a vertex on the foil.
 
 sensitivity.first_vertices_on_foil : Obsolete
 
-sensitivity.angle_between_tracks : If 2 tracks: Angle between the initial momentum vectors of the two tracks. Does not require them to share a vertex (maybe it should)
+sensitivity.angle_between_tracks : For 2-electron events: Angle between the initial momentum vectors of the two tracks. Does not require them to share a vertex (maybe it should). For 1-electron-n-gamma events, angle between the electron track and the highest-energy gamma “track”, if we assume that the gamma travels from the foil-most electron vertex to the centre of the calorimeter that it hits first.
 
 sensitivity.same_side_of_foil : If 2 tracks: True if both tracks are on the same side of the foil, false if not
 
-sensitivity.first_track_momentum_x :                               sensitivity.first_track_momentum_y :                               sensitivity.first_track_momentum_z :                               sensitivity.second_track_momentum_x :                              sensitivity.second_track_momentum_y :                              sensitivity.second_track_momentum_z :  Initial momentum vectors for the two tracks (Only if two tracks, arbitrary which is which)
+sensitivity.first_track_direction_x :                               sensitivity.first_track_direction_y :                               sensitivity.first_track_direction_z :                               sensitivity.second_track_direction_x :                              sensitivity.second_track_direction_y :                              sensitivity.second_track_direction_z :  Initial direction vectors for the two tracks (Only if two tracks, arbitrary which is which)
 
-sensitivity.time_delay : If 2 calorimeter hits (both associated with tracks) - time delay in nanoseconds between the tracks. Used in the past as a crude proxy for internal/external probability.
+sensitivity.time_delay : If 2 calorimeter hits  - time delay in nanoseconds between the hits. Used in the past as a crude proxy for internal/external probability.
 
-sensitivity.internal_probability :  If 2 associated tracks, this calculates the probability that it is an internal event (both tracks are initiated in the foil). If internal, this should be equally distributed from 0 to 1. If external (particle leaves one calorimeter, travels to foil, then to another calorimeter) this will be very close to 0. Calculated from energy and time of calorimeter hits vs length or tracks.
+sensitivity.topology_2e : True if event has a 2-electron topology (2 tracks with associated calorimeter hits, no gammas, no other tracks). False if not.
+
+sensitivity.internal_probability :  Calculates the probability that it is an internal event (both tracks are initiated in the foil). Available for 2-electron events, or 1-electron-n-gamma events, in which case it uses the path of the highest energy gamma. If internal, this should be equally distributed from 0 to 1. If external (particle leaves one calorimeter, travels to foil, then to another calorimeter) this will be very close to 0. Calculated from energy and time of calorimeter hits vs length of tracks.
 
 sensitivity.internal_chi_squared :  Intermediate step to calculating internal_probability
 
-sensitivity.external_probability : If 2 associated tracks, this calculates the probability that it is an external event (particle leaves one calorimeter, travels to foil, then to another calorimeter).  If external, this should be equally distributed from 0 to 1. If internal  (both tracks are initiated in the foil) this will be very close to 0. Calculated from energy and time of calorimeter hits vs length or tracks.
+sensitivity.external_probability : If 2 associated tracks, this calculates the probability that it is an external event (particle leaves one calorimeter, travels to foil, then to another calorimeter).   Available for 2-electron events, or 1-electron-n-gamma events, in which case it uses the path of the highest energy gamma. If external, this should be equally distributed from 0 to 1. If internal  (both tracks are initiated in the foil) this will be very close to 0. Calculated from energy and time of calorimeter hits vs length of tracks.
 
 sensitivity.external_chi_squared :  Intermediate step to calculating external_probability
                                
-sensitivity.foil_projected_internal_chi_squared
-sensitivity.foil_projected_external_chi_squared: As internal and external chi squared, if each track’s length were extended to project the track linearly back to the foil
+sensitivity.foil_projected_internal_probability
+sensitivity.foil_projected_external_probability: As internal and external probability, if each track’s length were extended to project the track linearly back to the foil
+
+sensitivity.topology_1e1gamma : True if event has 1 electron candidate (track with associated hits) and 1 gamma candidate (collection of unassociated hits with timings corresponding to a single gamma)
+
+sensitivity.topology_1engamma : True if event has 1 electron candidate (track with associated hits) and 1 or more gamma candidates (collections of unassociated hits with timings corresponding to a gamma)
 
 sensitivity.calorimeter_hit_count: Number of calorimeter hits
 
-sensitivity.small_cluster_count: Number of clusters with 2 hits
-
 sensitivity.cluster_count: Number of clusters with 3 or more hits
 
-sensitivity.third_calo_energy: Third-highest calorimeter energy
+sensitivity.track_count: Number of tracks in the tracker
+
+sensitivity.associated_track_count : Number of electron candidates
+
+sensitivity.alpha_count : Not used yet
+
+sensitivity.foil_alpha_count : Not used yet
+
+sensitivity.latest_delayed_hit : Not used yet
+
+sensitivity.small_cluster_count: Number of clusters with 2 hits
+
+sensitivity.third_calo_energy: copy of highest_gamma_energy, name kept for legacy
+
+sensitivity.highest_gamma_energy: Highest energy gamma, may come from more than 1 calorimeter hit as specified by gamma tracko- clustering
 
 sensitivity.edgemost_vertex: Absolute y position (in mm) of the vertex that is nearest to the edge of the detector in the y dimension. This could possibly be used with small cluster identification to find events near the edge of the detector who have two tracks, each associated with a calorimeter and with close vertices on the foil, but for one of which there are only 2 hits (because it is too near the edge to pass through 3 cells).
 
