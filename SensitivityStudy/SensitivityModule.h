@@ -5,7 +5,7 @@
 #define TESTMODULE_HH
 // Standard Library
 // Third Party
-#include <boost/foreach.hpp>
+//#include <boost/foreach.hpp>
 #include "TFile.h"
 #include "TTree.h"
 #include "TMath.h"
@@ -17,6 +17,8 @@
 #include "bayeux/mctools/simulated_data.h"
 #include "bayeux/genbb_help/primary_particle.h"
 #include "bayeux/genbb_help/primary_event.h"
+#include "bayeux/datatools/service_manager.h"
+#include "bayeux/geomtools/manager.h"
 #include "bayeux/geomtools/geometry_service.h"
 #include "bayeux/geomtools/line_3d.h"
 #include "bayeux/geomtools/helix_3d.h"
@@ -29,16 +31,22 @@
 
 typedef struct SensitivityEventStorage{
   bool passes_two_calorimeters_;
+  bool passes_two_plus_calos_;
   bool passes_two_clusters_;
   bool passes_two_tracks_;
   bool passes_associated_calorimeters_;
   int number_of_electrons_;
+  int number_of_gammas_;
   double total_calorimeter_energy_;
 
   double lower_electron_energy_; // MeV
   double higher_electron_energy_;// MeV
   double true_lower_electron_energy_;
   double true_higher_electron_energy_;
+  
+  std::vector<double> electron_energies_;
+  std::vector<double> gamma_energies_;
+  
   // Truth info - particle energies in MeV
   double true_highest_primary_energy_;
   double true_second_primary_energy_;
@@ -54,18 +62,18 @@ typedef struct SensitivityEventStorage{
   double second_vertex_y_;
   double second_vertex_z_;
   // And momenta at the first vertex
-  double first_track_momentum_x_;
-  double first_track_momentum_y_;
-  double first_track_momentum_z_;
-  double second_track_momentum_x_;
-  double second_track_momentum_y_;
-  double second_track_momentum_z_;
+  double first_track_direction_x_;
+  double first_track_direction_y_;
+  double first_track_direction_z_;
+  double second_track_direction_x_;
+  double second_track_direction_y_;
+  double second_track_direction_z_;
   // Use these to estimate the vertex position if the vertex were on the foil (x=0)
   // We only need y and z values for these, as x will always be 0 by definition
-  double first_projected_vertex_y_;
-  double first_projected_vertex_z_;
-  double second_projected_vertex_y_;
-  double second_projected_vertex_z_;
+  double first_proj_vertex_y_;
+  double first_proj_vertex_z_;
+  double second_proj_vertex_y_;
+  double second_proj_vertex_z_;
   // Use these to calculate the angle between tracks
   double angle_between_tracks_;
   double same_side_of_foil_;
@@ -79,6 +87,7 @@ typedef struct SensitivityEventStorage{
   
   // For calculating probability of an  internal/external topology
   double time_delay_;
+  bool topology_2e_; // Does it have a 2-electron-like topology?
   double internal_probability_;
   double internal_chi_squared_; // No longer used, was for validation of calculation
   double external_probability_;
@@ -88,12 +97,21 @@ typedef struct SensitivityEventStorage{
   double foil_projected_internal_probability_;
   double foil_projected_external_probability_;
   
+  double topology_1e1gamma_; // Does topology look like 1 electron, 1 gamma?
+  double topology_1engamma_; //  Does topology look like 1 electron, 1 or more gammas?
+  
   // Debug information
+  
   double calorimeter_hit_count_; // How many calorimeter hits over threshold?
   double cluster_count_; // How many clusters with 3 or more hits?
+  int track_count_; // How many reconstructed tracks?
+  int associated_track_count_; // How many reconstructed tracks with an associated calorimeter?
+  int alpha_count_; // How many reconstructed alphas (ie delayed hits)?
+  int foil_alpha_count_; //How many reconstructed alphas (ie delayed hits) that we think have a vertex on the foil?
+  double latest_delayed_hit_; // Time of the latest delayed hit (if any)
   double small_cluster_count_; // How many clusters with 2 hits?
-  double third_calo_energy_; // Energy of third calorimeter hit (if any)
-  double edgemost_vertex_;
+  double highest_gamma_energy_; // Highest energy gamma
+  double edgemost_vertex_; // Y position of the foil vertex nearest the side of the detector
 
 }sensitivityeventstorage;
 
@@ -124,9 +142,14 @@ class SensitivityModule : public dpp::base_module {
   TTree* truthtree_;
   TruthEventStorage truth_;
   
-  double ProbabilityFromChiSquared(double chiSquared);
-  void CalculateProbabilities(double &internalProbability, double &externalProbability, double *calorimeterEnergies, double *calorimeterEnergySigmas, double *trackLengths, double *calorimeterTimes, double *calorimeterTimeSigmas);
   
+  // geometry service
+  const geomtools::manager* geometry_manager_; //!< The geometry manager
+  
+  double ProbabilityFromChiSquared(double chiSquared);
+//  void CalculateProbabilities(double &internalProbability, double &externalProbability, double *calorimeterEnergies, double *calorimeterEnergySigmas, double *trackLengths, double *calorimeterTimes, double *calorimeterTimeSigmas);
+//  void Calculate1e1GammaProbabilities(double &internalProbability, double &externalProbability, double electronEnergy, double electronEnergySigma, double trackLength, double electronTime, double electronTimeSigma, double gammaEnergy, double gammaEnergySigma, double gammaTime, double gammaTimeSigma, double gammaDistance, double gammaDistanceSigma) ;
+  void CalculateProbabilities(double &internalProbability, double &externalProbability, double *calorimeterEnergies,  double *betas, double *trackLengths, double *calorimeterTimes, double *totalTimeVariances );
   // Macro which automatically creates the interface needed
   // to enable the module to be loaded at runtime
   DPP_MODULE_REGISTRATION_INTERFACE(SensitivityModule);
