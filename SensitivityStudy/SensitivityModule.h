@@ -43,15 +43,16 @@ typedef struct SensitivityEventStorage{
   double higher_electron_energy_;// MeV
   double true_lower_electron_energy_;
   double true_higher_electron_energy_;
-  
+
   std::vector<double> electron_energies_;
   std::vector<double> gamma_energies_;
-  
+  std::vector<double>* traj_cluster_delayed_time_;
+
   // Truth info - particle energies in MeV
   double true_highest_primary_energy_;
   double true_second_primary_energy_;
   double true_total_energy_;
-  
+
   // Get vertex position of up to two tracks in mm
   double first_vertex_x_; // Foil is at x ~ 0, main calo walls are at +/- 434.994 mm according to flvisualize
   double first_vertex_y_; // y direction is horizontal, parallel to the foil, you can see it in top view
@@ -77,14 +78,14 @@ typedef struct SensitivityEventStorage{
   // Use these to calculate the angle between tracks
   double angle_between_tracks_;
   double same_side_of_foil_;
-  
+
   double vertex_separation_; // How far apart are their vertices (the ones nearest the foil)
   double foil_projection_separation_; // How far apart would the vertices be if the tracks were projected back to the foil? Sometimes a track will not be reconstructed all the way back even if it really was from the foil
-  
+
   double projection_distance_xy_; // Distance between the end of the track and the foil projected vertex, in the xy plane (ie ignoring distance along wires - gives an indication of how many hits were missed). There are 2 tracks in a good event, and we want the longer of the two distances.
   int vertices_on_foil_; // How many tracks included a vertex on the foil?
   int first_vertices_on_foil_; // How many tracks had their FIRST vertex on the foil? OBSOLETE/USELESS
-  
+
   // For calculating probability of an  internal/external topology
   double time_delay_;
   bool topology_2e_; // Does it have a 2-electron-like topology?
@@ -92,16 +93,17 @@ typedef struct SensitivityEventStorage{
   double internal_chi_squared_; // No longer used, was for validation of calculation
   double external_probability_;
   double external_chi_squared_; // No longer used, was for validation of calculation
-  
+
   // These might help where the clusterer cannot reconstruct tracks all the way to the foil
   double foil_projected_internal_probability_;
   double foil_projected_external_probability_;
-  
+
   double topology_1e1gamma_; // Does topology look like 1 electron, 1 gamma?
   double topology_1engamma_; //  Does topology look like 1 electron, 1 or more gammas?
-  
+  double topology_1e1alpha_; //  Does topology look like 1 electron, 1 alpha?
+
   // Debug information
-  
+
   double calorimeter_hit_count_; // How many calorimeter hits over threshold?
   double cluster_count_; // How many clusters with 3 or more hits?
   int track_count_; // How many reconstructed tracks?
@@ -115,7 +117,7 @@ typedef struct SensitivityEventStorage{
 
 }sensitivityeventstorage;
 
-typedef struct TruthEventStorage{ 
+typedef struct TruthEventStorage{
   double lower_electron_energy_;
   double higher_electron_energy_;
 }trutheventstorage;
@@ -141,11 +143,11 @@ class SensitivityModule : public dpp::base_module {
   SensitivityEventStorage sensitivity_;
   TTree* truthtree_;
   TruthEventStorage truth_;
-  
-  
+
+
   // geometry service
   const geomtools::manager* geometry_manager_; //!< The geometry manager
-  
+
   double ProbabilityFromChiSquared(double chiSquared);
 //  void CalculateProbabilities(double &internalProbability, double &externalProbability, double *calorimeterEnergies, double *calorimeterEnergySigmas, double *trackLengths, double *calorimeterTimes, double *calorimeterTimeSigmas);
 //  void Calculate1e1GammaProbabilities(double &internalProbability, double &externalProbability, double electronEnergy, double electronEnergySigma, double trackLength, double electronTime, double electronTimeSigma, double gammaEnergy, double gammaEnergySigma, double gammaTime, double gammaTimeSigma, double gammaDistance, double gammaDistanceSigma) ;
