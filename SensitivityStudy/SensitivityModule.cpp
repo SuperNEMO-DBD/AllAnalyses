@@ -3,6 +3,11 @@ const double highEnergyLimit=0.150;// 150 keV
 const double lowEnergyLimit=0.050; // 50 keV
 const double electronMass=0.5109989461; // From pdg
 const double speedOfLight=299792458 * 1e-9 * 1000; // Millimeters per nanosecond
+
+int mainWallHitType=1302;
+int xWallHitType=1232;
+int gammaVetoHitType=1252;
+
 using namespace std;
 DPP_MODULE_REGISTRATION_IMPLEMENT(SensitivityModule,"SensitivityModule");
 SensitivityModule::SensitivityModule() : dpp::base_module()
@@ -102,6 +107,18 @@ void SensitivityModule::initialize(const datatools::properties& myConfig,
   tree_->Branch("sensitivity.highest_gamma_energy",&sensitivity_.highest_gamma_energy_);
   tree_->Branch("sensitivity.edgemost_vertex",&sensitivity_.edgemost_vertex_);
 
+  // Calorimeter positions
+  tree_->Branch("sensitivity.electron_hits_mainwall",&sensitivity_.electron_hits_mainwall_);
+  tree_->Branch("sensitivity.electron_hits_xwall",&sensitivity_.electron_hits_xwall_);
+  tree_->Branch("sensitivity.electron_hits_gveto",&sensitivity_.electron_hits_gveto_);
+  tree_->Branch("sensitivity.gamma_hits_mainwall",&sensitivity_.gamma_hits_mainwall_);
+  tree_->Branch("sensitivity.gamma_hits_xwall",&sensitivity_.gamma_hits_xwall_);
+  tree_->Branch("sensitivity.gamma_hits_gveto",&sensitivity_.gamma_hits_gveto_);
+  tree_->Branch("sensitivity.gamma_fractions_mainwall",&sensitivity_.gamma_fractions_mainwall_);
+  tree_->Branch("sensitivity.gamma_fractions_xwall",&sensitivity_.gamma_fractions_xwall_);
+  tree_->Branch("sensitivity.gamma_fractions_gveto",&sensitivity_.gamma_fractions_gveto_);
+  
+  
   truthtree_ = new TTree("Truth","Truth");
   truthtree_->SetDirectory(hfile_);
   truthtree_->Branch("truth.lower_electron_energy",&truth_.lower_electron_energy_);
@@ -160,6 +177,18 @@ SensitivityModule::process(datatools::things& workItem) {
 
   std::vector<double> gammaEnergies;
   std::vector<double> electronEnergies;
+
+  std::vector<int> electronCaloType; // will be translated to the vectors for each type at the end
+  std::vector<int> gammaCaloType; // will be translated to the vectors for each type at the end
+  
+  // To calculate the fraction of the energy from each particle that is deposited in each of the calorimeter walls
+  std::vector<double>electronMainwallFraction;
+  std::vector<double>electronXwallFraction;
+  std::vector<double>electronVetoFraction;
+  std::vector<double>gammaMainwallFraction;
+  std::vector<double>gammaXwallFraction;
+  std::vector<double>gammaVetoFraction;
+  
   std::vector<double> traj_cl_delayed_time;
 
   // Set to a value outside the detector
@@ -284,15 +313,47 @@ SensitivityModule::process(datatools::things& workItem) {
             gammaCandidates.push_back(track);
             numberOfGammas++;
             double thisEnergy=0;
+            double thisXwallEnergy=0;
+            double thisVetoEnergy=0;
+            double thisMainWallEnergy=0;
+            // Store the gamma candidate energies
+            double firstHitTime=-1.;
+            int firstHitType=0;
             // Store the gamma candidate energies
             for (unsigned int hit=0; hit<track.get_associated_calorimeter_hits().size();++hit)
             {
 
               const snemo::datamodel::calibrated_calorimeter_hit & calo_hit = track.get_associated_calorimeter_hits().at(hit).get();
-              thisEnergy += calo_hit.get_energy();
-            }
-            gammaEnergies.push_back(thisEnergy);
+              double thisHitEnergy=calo_hit.get_energy();
+              thisEnergy +=  thisHitEnergy;
+              int hitType=calo_hit.get_geom_id().get_type();
+              if (hitType==mainWallHitType)
+                thisMainWallEnergy+= thisHitEnergy;
+              else if (hitType==xWallHitType)
+                thisXwallEnergy+= thisHitEnergy;
+              else if (hitType==gammaVetoHitType)
+                thisVetoEnergy+= thisHitEnergy;
+              else cout<<"WARNING: Unknown calorimeter type "<<hitType<<endl;
 
+              // Get the coordinates of the hit with the earliest time
+              if (firstHitTime==-1 || calo_hit.get_time()<firstHitTime)
+              {
+                firstHitTime=calo_hit.get_time();
+                // Find out which calo wall
+                firstHitType=hitType;
+              }
+            }
+            
+            // Order the energies etc
+            int pos=InsertAndGetPosition(thisEnergy, gammaEnergies, true); // Add energy to ordered list of gamma energies (highest first) and get where in the list it was added
+            
+            // Now add the type of the first hit to a vector
+            InsertAt(firstHitType, gammaCaloType, pos);
+            // And the fraction of the energy deposited in each wall
+            InsertAt(thisMainWallEnergy/thisEnergy, gammaMainwallFraction,pos);
+            InsertAt(thisXwallEnergy/thisEnergy, gammaXwallFraction,pos);
+            InsertAt(thisVetoEnergy/thisEnergy, gammaVetoFraction,pos);
+            
             continue;
           }
           case snemo::datamodel::particle_track::POSITIVE:
@@ -346,14 +407,39 @@ SensitivityModule::process(datatools::things& workItem) {
         {
           electronCandidates.push_back(track);
           double thisEnergy=0;
+          double thisXwallEnergy=0;
+          double thisVetoEnergy=0;
+          double thisMainWallEnergy=0;
+          double firstHitTime=-1.;
+          int firstHitType=0;
           // Store the electron candidate energies
           for (unsigned int hit=0; hit<track.get_associated_calorimeter_hits().size();++hit)
           {
 
             const snemo::datamodel::calibrated_calorimeter_hit & calo_hit = track.get_associated_calorimeter_hits().at(hit).get();
-            thisEnergy += calo_hit.get_energy();
+            double thisHitEnergy=calo_hit.get_energy();
+            thisEnergy +=  thisHitEnergy;
+            int hitType=calo_hit.get_geom_id().get_type();
+            if (hitType==mainWallHitType)
+              thisMainWallEnergy+= thisHitEnergy;
+            else if (hitType==xWallHitType)
+              thisXwallEnergy+= thisHitEnergy;
+            else if (hitType==gammaVetoHitType)
+              thisVetoEnergy+= thisHitEnergy;
+            else cout<<"WARNING: Unknown calorimeter type "<<hitType<<endl;
+            
+            // Get the coordinates of the hit with the earliest time
+            if (firstHitTime==-1 || calo_hit.get_time()<firstHitTime)
+            {
+              firstHitTime=calo_hit.get_time();
+              // Find out which calo wall
+              firstHitType=hitType;
+            }
           }
-          electronEnergies.push_back(thisEnergy);
+          int pos=InsertAndGetPosition(thisEnergy, electronEnergies, true); // Add energy to ordered list of gamma energies (highest first) and get where in the list it was added
+          
+          // Now add the type of the first hit to a vector
+          InsertAt(firstHitType, electronCaloType, pos);
         }
         if (track.has_trajectory())
         {
@@ -867,6 +953,13 @@ SensitivityModule::process(datatools::things& workItem) {
   sensitivity_.topology_1e1alpha_=is1e1alpha;
   sensitivity_.topology_2e_=is2electron;
 
+  // Calorimeter walls: fractions of energy in each and vector of booleans
+  // to say whether there are any hits in that wall
+  sensitivity_.gamma_fractions_mainwall_ =  gammaMainwallFraction;
+  sensitivity_.gamma_fractions_xwall_ = gammaXwallFraction;
+  sensitivity_.gamma_fractions_gveto_ = gammaVetoFraction;
+  PopulateWallVectors(electronCaloType, sensitivity_.electron_hits_mainwall_, sensitivity_.electron_hits_xwall_,  sensitivity_.electron_hits_gveto_ );
+  PopulateWallVectors(gammaCaloType, sensitivity_.gamma_hits_mainwall_, sensitivity_.gamma_hits_xwall_,  sensitivity_.gamma_hits_gveto_ );
 
   // Debug information
   sensitivity_.calorimeter_hit_count_=caloHitCount;
@@ -916,6 +1009,61 @@ void SensitivityModule::CalculateProbabilities(double &internalProbability, doub
 
 }
 
+
+/* Functions for sorting vectors of calorimeter wall positions */
+
+// Insert a value into a vector (of the same type), at a particular position (0 is first etc)
+// If you pick a position past the end of the vector, stick it on the end
+// Position of -1 also sticks it at the end
+template <typename T>
+void SensitivityModule::InsertAt(T toInsert, std::vector<T> &vec, int position)
+{
+  if (position>vec.size() || position==-1 )
+  {
+    vec.push_back(toInsert);
+    return;
+  }
+  else
+  {
+    typename std::vector<T>::iterator it=vec.begin();
+    vec.insert(std::next(it,position),toInsert);
+  }
+  return;
+}
+
+// Fill in the 3 vectors of wall booleans based on the calo wall that got the first hit
+void SensitivityModule::PopulateWallVectors(std::vector<int> &calotypes, std::vector<bool> &mainVec, std::vector<bool> &xVec, std::vector<bool> &vetoVec)
+{
+  mainVec.clear();
+  xVec.clear();
+  vetoVec.clear();
+  for (int i=0;i<calotypes.size();i++)
+  {
+    mainVec.push_back(calotypes.at(i)==mainWallHitType);
+    xVec.push_back(calotypes.at(i)==xWallHitType);
+    vetoVec.push_back(calotypes.at(i)==gammaVetoHitType);
+  }
+}
+
+
+// Find the position to insert a value into a sorted vector
+int SensitivityModule::InsertAndGetPosition(double toInsert, std::vector<double> &vec, bool highestFirst)
+{
+  std::vector<double>::iterator it;
+  int len=vec.size();
+  
+  it=vec.begin();
+  for (int i=0;i<len;i++)
+  {
+    if ((highestFirst && (toInsert > vec.at(i))) || (!highestFirst && (toInsert < vec.at(i))))
+    {
+      vec.insert(std::next(it,i),toInsert);
+      return i;
+    }
+  }
+  vec.push_back(toInsert);
+  return -1; // It needs adding at the end
+}
 
 // Convert a chi-squared value to a probability by integrating the chi square distribution up to that limit
 double SensitivityModule::ProbabilityFromChiSquared(double chiSquared)

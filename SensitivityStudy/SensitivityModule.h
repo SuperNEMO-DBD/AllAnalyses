@@ -101,6 +101,18 @@ typedef struct SensitivityEventStorage{
   double topology_1e1gamma_; // Does topology look like 1 electron, 1 gamma?
   double topology_1engamma_; //  Does topology look like 1 electron, 1 or more gammas?
   double topology_1e1alpha_; //  Does topology look like 1 electron, 1 alpha?
+  
+  // For electrons and gammas, get the position of the earliest associated calorimeter hit
+  // (for electrons we currently associate only 1 but gamma tracks can hit multiple calos
+  std::vector<bool> electron_hits_mainwall_;
+  std::vector<bool> electron_hits_xwall_;
+  std::vector<bool> electron_hits_gveto_;
+  std::vector<bool> gamma_hits_mainwall_;
+  std::vector<bool> gamma_hits_xwall_;
+  std::vector<bool> gamma_hits_gveto_;
+  std::vector<double> gamma_fractions_mainwall_;
+  std::vector<double> gamma_fractions_xwall_;
+  std::vector<double> gamma_fractions_gveto_;
 
   // Debug information
 
@@ -149,9 +161,13 @@ class SensitivityModule : public dpp::base_module {
   const geomtools::manager* geometry_manager_; //!< The geometry manager
 
   double ProbabilityFromChiSquared(double chiSquared);
-//  void CalculateProbabilities(double &internalProbability, double &externalProbability, double *calorimeterEnergies, double *calorimeterEnergySigmas, double *trackLengths, double *calorimeterTimes, double *calorimeterTimeSigmas);
-//  void Calculate1e1GammaProbabilities(double &internalProbability, double &externalProbability, double electronEnergy, double electronEnergySigma, double trackLength, double electronTime, double electronTimeSigma, double gammaEnergy, double gammaEnergySigma, double gammaTime, double gammaTimeSigma, double gammaDistance, double gammaDistanceSigma) ;
   void CalculateProbabilities(double &internalProbability, double &externalProbability, double *calorimeterEnergies,  double *betas, double *trackLengths, double *calorimeterTimes, double *totalTimeVariances );
+  // Functions used to populate the vectors of info about which calorimeter walls were hit
+  int InsertAndGetPosition(double toInsert, std::vector<double> &vec, bool highestFirst);
+  void PopulateWallVectors(std::vector<int> &calotypes, std::vector<bool> &mainVec, std::vector<bool> &xVec, std::vector<bool> &vetoVec);
+  template <typename T>  void InsertAt(T toInsert, std::vector<T> &vec, int position);
+  
+
   // Macro which automatically creates the interface needed
   // to enable the module to be loaded at runtime
   DPP_MODULE_REGISTRATION_INTERFACE(SensitivityModule);

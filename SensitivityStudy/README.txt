@@ -146,6 +146,21 @@ sensitivity.highest_gamma_energy: Highest energy gamma, may come from more than 
 
 sensitivity.edgemost_vertex: Absolute y position (in mm) of the vertex that is nearest to the edge of the detector in the y dimension. This could possibly be used with small cluster identification to find events near the edge of the detector who have two tracks, each associated with a calorimeter and with close vertices on the foil, but for one of which there are only 2 hits (because it is too near the edge to pass through 3 cells).
 
+sensitivity.gamma_fractions_mainwall:
+sensitivity.gamma_fractions_xwall :
+sensitivity.gamma_fractions_gveto :
+Vectors corresponding to each reconstructed gamma in the event, starting from the most energetic and decreasing in energy order. For each one, they give the fraction of the energy of that gamma that was deposited in the given wall. (With gamma tracker, a given gamma can scatter to several calorimeters). (Therefore, for each entry number, the values for the 3 vectors should add up to 1).
+
+sensitivity.gamma_hits_mainwall:
+sensitivity.gamma_hits_xwall :
+sensitivity.gamma_hits_gveto :
+Vectors corresponding to each reconstructed gamma in the event, starting from the most energetic and decreasing in energy order. For each one, if the FIRST (in time) hit for that gamma was in the specified wall, it will be true, otherwise false. (Therefore, for each entry number, only 1 of these three should be true).
+
+sensitivity.electron_hits_mainwall:
+sensitivity.electron_hits_xwall :
+sensitivity.electron_hits_gveto :
+Vectors corresponding to each reconstructed electron in the event, starting from the most energetic and decreasing in energy order. For each one, if the associated calo hit for that electron was in the specified wall, it will be true, otherwise false. (Therefore, for each entry number, only 1 of these three should be true).
+
 ====================
 AnalyseSensitivity
 ====================

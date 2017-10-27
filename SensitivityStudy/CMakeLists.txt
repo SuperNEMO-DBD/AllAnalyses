@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.3)
 project(SensitivityModule)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(GSL_VERSION "2.3")
+set(GSL_VERSION "2.4")
 
 find_package(Falaise REQUIRED)
 
