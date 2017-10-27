@@ -410,14 +410,44 @@ SensitivityModule::process(datatools::things& workItem) {
         {
           electronCandidates.push_back(track);
           double thisEnergy=0;
+          double thisXwallEnergy=0;
+          double thisVetoEnergy=0;
+          double thisMainWallEnergy=0;
+          double firstHitTime=-1.;
+          int firstHitType=0;
           // Store the electron candidate energies
           for (unsigned int hit=0; hit<track.get_associated_calorimeter_hits().size();++hit)
           {
 
             const snemo::datamodel::calibrated_calorimeter_hit & calo_hit = track.get_associated_calorimeter_hits().at(hit).get();
-            thisEnergy += calo_hit.get_energy();
+            double thisHitEnergy=calo_hit.get_energy();
+            thisEnergy +=  thisHitEnergy;
+            int hitType=calo_hit.get_geom_id().get_type();
+            if (hitType==mainWallHitType)
+              thisMainWallEnergy+= thisHitEnergy;
+            else if (hitType==xWallHitType)
+              thisXwallEnergy+= thisHitEnergy;
+            else if (hitType==gammaVetoHitType)
+              thisVetoEnergy+= thisHitEnergy;
+            else cout<<"WARNING: Unknown calorimeter type "<<hitType<<endl;
+            
+            // Get the coordinates of the hit with the earliest time
+            if (firstHitTime==-1 || calo_hit.get_time()<firstHitTime)
+            {
+              firstHitTime=calo_hit.get_time();
+              // Find out which calo wall
+              firstHitType=hitType;
+            }
           }
-          electronEnergies.push_back(thisEnergy);
+//          electronEnergies.push_back(thisEnergy);
+          int pos=InsertAndGetPosition(thisEnergy, electronEnergies, true); // Add energy to ordered list of gamma energies (highest first) and get where in the list it was added
+          
+          // Now add the type of the first hit to a vector
+          InsertAt(firstHitType, electronCaloType, pos);
+          // And the fraction of the energy deposited in each wall
+          InsertAt(thisMainWallEnergy/thisEnergy, electronMainwallFraction,pos);
+          InsertAt(thisXwallEnergy/thisEnergy, electronXwallFraction,pos);
+          InsertAt(thisVetoEnergy/thisEnergy, electronVetoFraction,pos);
         }
         if (track.has_trajectory())
         {
