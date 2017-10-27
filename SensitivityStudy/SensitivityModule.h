@@ -110,9 +110,6 @@ typedef struct SensitivityEventStorage{
   std::vector<bool> gamma_hits_mainwall_;
   std::vector<bool> gamma_hits_xwall_;
   std::vector<bool> gamma_hits_gveto_;
-  std::vector<double> electron_fractions_mainwall_;
-  std::vector<double> electron_fractions_xwall_;
-  std::vector<double> electron_fractions_gveto_;
   std::vector<double> gamma_fractions_mainwall_;
   std::vector<double> gamma_fractions_xwall_;
   std::vector<double> gamma_fractions_gveto_;

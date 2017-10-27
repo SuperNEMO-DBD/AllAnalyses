@@ -114,9 +114,6 @@ void SensitivityModule::initialize(const datatools::properties& myConfig,
   tree_->Branch("sensitivity.gamma_hits_mainwall",&sensitivity_.gamma_hits_mainwall_);
   tree_->Branch("sensitivity.gamma_hits_xwall",&sensitivity_.gamma_hits_xwall_);
   tree_->Branch("sensitivity.gamma_hits_gveto",&sensitivity_.gamma_hits_gveto_);
-  tree_->Branch("sensitivity.electron_fractions_mainwall",&sensitivity_.electron_fractions_mainwall_);
-  tree_->Branch("sensitivity.electron_fractions_xwall",&sensitivity_.electron_fractions_xwall_);
-  tree_->Branch("sensitivity.electron_fractions_gveto",&sensitivity_.electron_fractions_gveto_);
   tree_->Branch("sensitivity.gamma_fractions_mainwall",&sensitivity_.gamma_fractions_mainwall_);
   tree_->Branch("sensitivity.gamma_fractions_xwall",&sensitivity_.gamma_fractions_xwall_);
   tree_->Branch("sensitivity.gamma_fractions_gveto",&sensitivity_.gamma_fractions_gveto_);
@@ -439,15 +436,10 @@ SensitivityModule::process(datatools::things& workItem) {
               firstHitType=hitType;
             }
           }
-//          electronEnergies.push_back(thisEnergy);
           int pos=InsertAndGetPosition(thisEnergy, electronEnergies, true); // Add energy to ordered list of gamma energies (highest first) and get where in the list it was added
           
           // Now add the type of the first hit to a vector
           InsertAt(firstHitType, electronCaloType, pos);
-          // And the fraction of the energy deposited in each wall
-          InsertAt(thisMainWallEnergy/thisEnergy, electronMainwallFraction,pos);
-          InsertAt(thisXwallEnergy/thisEnergy, electronXwallFraction,pos);
-          InsertAt(thisVetoEnergy/thisEnergy, electronVetoFraction,pos);
         }
         if (track.has_trajectory())
         {
@@ -963,9 +955,6 @@ SensitivityModule::process(datatools::things& workItem) {
 
   // Calorimeter walls: fractions of energy in each and vector of booleans
   // to say whether there are any hits in that wall
-  sensitivity_.electron_fractions_mainwall_ = electronMainwallFraction;
-  sensitivity_.electron_fractions_xwall_ = electronXwallFraction;
-  sensitivity_.electron_fractions_gveto_ = electronVetoFraction;
   sensitivity_.gamma_fractions_mainwall_ =  gammaMainwallFraction;
   sensitivity_.gamma_fractions_xwall_ = gammaXwallFraction;
   sensitivity_.gamma_fractions_gveto_ = gammaVetoFraction;
