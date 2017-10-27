@@ -180,6 +180,18 @@ SensitivityModule::process(datatools::things& workItem) {
 
   std::vector<double> gammaEnergies;
   std::vector<double> electronEnergies;
+
+  std::vector<int> electronCaloType; // will be translated to the vectors for each type at the end
+  std::vector<int> gammaCaloType; // will be translated to the vectors for each type at the end
+  
+  // To calculate the fraction of the energy from each particle that is deposited in each of the calorimeter walls
+  std::vector<double>electronMainwallFraction;
+  std::vector<double>electronXwallFraction;
+  std::vector<double>electronVetoFraction;
+  std::vector<double>gammaMainwallFraction;
+  std::vector<double>gammaXwallFraction;
+  std::vector<double>gammaVetoFraction;
+  
   std::vector<double> traj_cl_delayed_time;
 
   // Set to a value outside the detector
@@ -887,6 +899,16 @@ SensitivityModule::process(datatools::things& workItem) {
   sensitivity_.topology_1e1alpha_=is1e1alpha;
   sensitivity_.topology_2e_=is2electron;
 
+  // Calorimeter walls: fractions of energy in each and vector of booleans
+  // to say whether there are any hits in that wall
+  sensitivity_.electron_fractions_mainwall_ = electronMainwallFraction;
+  sensitivity_.electron_fractions_xwall_ = electronXwallFraction;
+  sensitivity_.electron_fractions_gveto_ = electronVetoFraction;
+  sensitivity_.gamma_fractions_mainwall_ =  gammaMainwallFraction;
+  sensitivity_.gamma_fractions_xwall_ = gammaXwallFraction;
+  sensitivity_.gamma_fractions_gveto_ = gammaVetoFraction;
+  PopulateWallVectors(electronCaloType, sensitivity_.electron_hits_mainwall_, sensitivity_.electron_hits_xwall_,  sensitivity_.electron_hits_gveto_ );
+  PopulateWallVectors(gammaCaloType, sensitivity_.gamma_hits_mainwall_, sensitivity_.gamma_hits_xwall_,  sensitivity_.gamma_hits_gveto_ );
 
   // Debug information
   sensitivity_.calorimeter_hit_count_=caloHitCount;
