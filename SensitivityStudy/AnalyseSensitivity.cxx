@@ -15,6 +15,8 @@
 using namespace std;
 
 double AVOGADRO=6.022140e23;
+string MAINCUT= "sensitivity.number_of_electrons==2 && sensitivity.passes_two_calorimeters && sensitivity.passes_associated_calorimeters && (sensitivity.higher_electron_energy != sensitivity.lower_electron_energy)";
+string PROBCUT ="&& sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04";
 
 class Isotope {
   int molarMass_;
@@ -159,7 +161,7 @@ TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additiona
 int main()
 { 
   IsotopeSample *se_sample= new IsotopeSample("Se");
-  MakePlotsForIsotope("/Users/cpatrick/uclnemo2/MCC1_0/se82_0nubb/se82_0nubb_10M_sensitivity.root", "/Users/cpatrick/uclnemo2/MCC1_0/se82_2nubb/se82_2nubb_10M_sensitivity.root", se_sample);
+  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/se82_0nubb_10M_sensitivity.root", "/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/se82_2nubb_10M_sensitivity.root", se_sample);
 //  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
 
   
@@ -203,15 +205,16 @@ void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSamp
 
   gStyle->SetOptStat(0);
 
-  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2", "Two negatively charged tracks required", "two_electron_cut", sample);
+ // MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2", "Two electron tracks required", "two_electron_cut", sample);
 
   //MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons>=1", "One or more negatively charged tracks required", "one_electron_cut", sample);
   
+  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, PROBCUT, "No charge requirement, NEMO3 internal/external prob cuts", "no_electron_cut_int_ext_prob", sample);
+  
   MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "", "No track charge requirement", "no_electron_cut", sample);
 
-  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04", "No charge requirement, NEMO3 internal/external prob cuts", "no_electron_cut_int_ext_prob", sample);
   
-  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2 && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04", "Two -ve tracks,  NEMO3 internal/external prob cuts", "two_electron_int_ext_prob", sample);
+ // MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2 && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04", "Two -ve tracks,  NEMO3 internal/external prob cuts", "two_electron_int_ext_prob", sample);
   return;
 }
 
@@ -225,7 +228,8 @@ TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additiona
   string title=bgIsotope->GetIsotopeName()+"-"+bgIsotope->GetMolarMassText()+" ("+bgIsotope->GetIsotopeLocation()+")";
   energyPlot->SetTitle(title.c_str());
   
-  tree->Draw("(sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>>energy",("sensitivity.passes_associated_calorimeters "+additionalCut ).c_str(),"HIST");
+  tree->Draw("(sensitivity.total_calorimeter_energy)>>energy",(MAINCUT+additionalCut).c_str(),"HIST");
+  //tree->Draw("(sensitivity.total_calorimeter_energy)>>energy",("sensitivity.number_of_electrons==2 && sensitivity.passes_two_calorimeters && sensitivity.passes_associated_calorimeters "+additionalCut ).c_str(),"HIST");
   return energyPlot;
 }
 
@@ -241,12 +245,15 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   energy0nubb->GetYaxis()->SetTitle("Count (area normalized to 0#nu#beta#beta)");
   energy0nubb->SetTitle(("^{"+sample->GetMolarMassText()+"}"+sample->GetIsotopeName()+" "+cutTitle).c_str());
   
-  tree0nubb->Draw("(sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>>energy0nuBB",("sensitivity.passes_associated_calorimeters "+extraCut ).c_str(),"HIST");
+  string totalcut=MAINCUT+extraCut;
+  cout<<"Cut is "<<totalcut<<endl;
+  tree0nubb->Draw("(sensitivity.total_calorimeter_energy)>>energy0nuBB",totalcut.c_str(),"HIST");
+//  tree0nubb->Draw("(sensitivity.total_calorimeter_energy)>>energy0nuBB",("sensitivity.number_of_electrons==2 && sensitivity.passes_two_calorimeters && sensitivity.passes_associated_calorimeters && (sensitivity.higher_electron_energy != sensitivity.lower_electron_energy) "+extraCut ).c_str(),"HIST");
   
   TH1D *energy2nubb=new TH1D("energy2nuBB","energy2nuBB",nbins,sample->GetMinEnergy(),sample->GetMaxEnergy());
 
   energy2nubb->SetLineColor(kRed);
-  tree2nubb->Draw("(sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>>energy2nuBB",("sensitivity.passes_associated_calorimeters" + extraCut ).c_str(),"HIST SAME"); 
+  tree2nubb->Draw("(sensitivity.total_calorimeter_energy)>>energy2nuBB",totalcut.c_str(),"HIST SAME");
 
   energy2nubb->Scale(energy0nubb->Integral()/energy2nubb->Integral());
   c->SaveAs(("plots/"+sample->GetIsotopeName()+sample->GetMolarMassText()+"_energy_"+cutFilenameSuffix+".png").c_str());
@@ -262,9 +269,9 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
 
   efficiency0nubb->SetTitle(("^{"+sample->GetMolarMassText()+"}"+sample->GetIsotopeName()+" "+cutTitle).c_str());
   efficiency0nubb->GetYaxis()->SetRangeUser (1e-8,1);
-  efficiency0nubb->Draw("P");
+  efficiency0nubb->Draw("HIST P");
   efficiency2nubb->Scale(sample->GetFractionOfEventsIn2bbSample());
-  efficiency2nubb->Draw("P SAME");
+  efficiency2nubb->Draw("HIST P SAME");
   c->SetLogy(true);
   c->SaveAs(("plots/"+sample->GetIsotopeName()+sample->GetMolarMassText()+"_efficiency_"+cutFilenameSuffix+".png").c_str());
 
@@ -276,7 +283,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // #### Background isotopes go here
 
 // Newest measurement 370uBq total
-  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/Users/cpatrick/uclnemo2/MCC1_0/Tl208_foil/tl208_foil_5M_sensitivity.root","foils"));
+  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/tl208_foil_5M_sensitivity.root","foils"));
      // target is 2 uBq/kg (J Mott thesis)
 //  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 2.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/tl208_foil_sensitivity.root","foils"));
 
@@ -284,7 +291,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // However target is 10 uBq/kg (J Mott thesis)
   // (HOW ARE THESE SO DIFFERENT?) so try that for now
   // Using Dave's "typical measurement 300uBq per kilo"
-  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/Users/cpatrick/uclnemo2/MCC1_0/Bi214_foil/bi214_foil_5M_sensitivity.root","foils"));
+  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/bi214_foil_5M_sensitivity.root","foils"));
   
  // backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 10.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_foil_sensitivity.root","foils"));
 //
@@ -316,7 +323,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   c->SetLogy(false);
   sensitivity->GetYaxis()->SetRangeUser(0,1e25);
   sensitivity->SetTitle(("^{"+sample->GetMolarMassText()+"}"+sample->GetIsotopeName()+" "+cutTitle).c_str());
-  sensitivity->Draw("P");
+  sensitivity->Draw("HIST P");
   c->SaveAs(("plots/"+sample->GetIsotopeName()+sample->GetMolarMassText()+"_sensitivity_window_method_"+cutFilenameSuffix+".png").c_str());
 
   // Get an overall sensitivity from TLimit and compare
@@ -394,6 +401,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   c->SetLogy(false);
 }
 
+
 TH1D* PlotEfficiency(TTree *tree, double totalEntries, string additionalCut, double minEnergy, double maxEnergy)
 {
   int nbins=(int)((maxEnergy*20)-(minEnergy*20));
@@ -402,7 +410,7 @@ TH1D* PlotEfficiency(TTree *tree, double totalEntries, string additionalCut, dou
   {
     double lowEnergyLimit=efficiency->GetXaxis()->GetBinLowEdge(bin);
     
-    string cut= Form("sensitivity.passes_associated_calorimeters &&(sensitivity.lower_electron_energy+sensitivity.higher_electron_energy) >= %f && (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy) < %f", lowEnergyLimit,maxEnergy);
+    string cut= MAINCUT+PROBCUT+ Form(" &&(sensitivity.total_calorimeter_energy) >= %f && (sensitivity.total_calorimeter_energy) < %f", lowEnergyLimit,maxEnergy);
     cut = cut +additionalCut;
     double entriesPassingCut=tree->GetEntries(cut.c_str());
     efficiency->SetBinContent(bin,(double)entriesPassingCut/(double)totalEntries);
@@ -606,13 +614,13 @@ int CalculateEfficiencies(TTree *tree,  IsotopeSample *sample, bool is2nubb, int
   cout<<"And passes internal/external probability cut: "<<(double)passesProbabilityCut/(double)totalEntries * 100<<"%"<<endl;
 
   // Passes NEMO3 internal/external probability cuts, 2-3.2 MeV
-  int passesProbabilityAndRoI=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 &&  (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>=2 &&   (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)< 3.2");
+  int passesProbabilityAndRoI=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 &&  (sensitivity.total_calorimeter_energy)>=2 &&   (sensitivity.total_calorimeter_energy)< 3.2");
   cout<<"Passes internal/external probability in Se82ROI: "<<(double)passesProbabilityAndRoI/(double)totalEntries * 100<<"%"<<endl;
 
   // And both tracks have negative charge reconstruction
   
-  int passesTwoElectronCut=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.number_of_electrons==2  && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 &&  (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>=2 &&   (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)< 3.2");
-  cout<<"And both tracks have negative charge: "<<(double)passesTwoElectronCut/(double)totalEntries * 100<<"%"<<endl;
+//  int passesTwoElectronCut=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.number_of_electrons==2  && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 &&  (sensitivity.total_calorimeter_energy)>=2 &&   (sensitivity.total_calorimeter_energy)< 3.2");
+ // cout<<"And both tracks have negative charge: "<<(double)passesTwoElectronCut/(double)totalEntries * 100<<"%"<<endl;
   
   return totalEntries;
 }
