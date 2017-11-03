@@ -211,7 +211,7 @@ void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSamp
   
   MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, PROBCUT, "No charge requirement, NEMO3 internal/external prob cuts", "no_electron_cut_int_ext_prob", sample);
   
-  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "", "No track charge requirement", "no_electron_cut", sample);
+  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "", "No probability cuts", "no_electron_cut", sample);
 
   
  // MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2 && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04", "Two -ve tracks,  NEMO3 internal/external prob cuts", "two_electron_int_ext_prob", sample);
@@ -272,7 +272,15 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   efficiency0nubb->Draw("HIST P");
   efficiency2nubb->Scale(sample->GetFractionOfEventsIn2bbSample());
   efficiency2nubb->Draw("HIST P SAME");
+  
+  TLegend *efflegend = new TLegend(0.2,0.2,0.35,0.35);
+  gStyle-> SetLegendBorderSize(0);
+  efflegend->AddEntry(efficiency0nubb,"0#nu#beta#beta","p");
+  efflegend->AddEntry(efficiency2nubb,"2#nu#beta#beta","p");
   c->SetLogy(true);
+  
+  efflegend->Draw();
+
   c->SaveAs(("plots/"+sample->GetIsotopeName()+sample->GetMolarMassText()+"_efficiency_"+cutFilenameSuffix+".png").c_str());
 
   // Calculate efficiencies for other background isotopes
@@ -350,9 +358,9 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   scaledBkgd->SetLineWidth(3);
   scaledBkgd->GetYaxis()->SetTitle("Expected events");
   scaledBkgd->GetXaxis()->SetTitle("Summed electron energies (MeV)");
-  scaledBkgd->SetTitle("Energies of different processes");
+  scaledBkgd->SetTitle("Signal and background energy spectra");
   scaledBkgd->Draw("HIST");
-  TLegend *legend = new TLegend(0.6,0.7,0.9,0.9);
+  TLegend *legend = new TLegend(0.6,0.65,0.9,0.85);
   gStyle-> SetLegendBorderSize(0);
 
   legend->AddEntry(scaledBkgd,"2#nu#beta#beta","l");
@@ -452,6 +460,7 @@ TH1D* EstimateSensitivity(TH1D *energy0nubb, TH1D *energy2nubb, IsotopeSample *s
   sensitivity->SetMarkerSize(1);
   sensitivity->SetMarkerStyle(kFullCircle);
   sensitivity->GetYaxis()->SetTitle("0#nu#beta#beta halflife sensitivity");
+  sensitivity->GetYaxis()->SetTitleOffset(1.2);
   string title=Form("Energy (MeV) #leq #Sigma_{12} E_{calibrated}#leq %.1f MeV",sample->GetMaxEnergy());
   sensitivity->GetXaxis()->SetTitle(title.c_str());
 
