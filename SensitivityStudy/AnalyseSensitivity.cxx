@@ -105,7 +105,9 @@ IsotopeSample::IsotopeSample(string isotopeName)
 {
   if (isotopeName=="Se" || isotopeName=="se" || isotopeName=="SE")
     {
-      this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,4.39912675943585491e-02);
+//      this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,4.39912675943585491e-02);
+      
+      this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,0.0440500); // get fraction with true total energy over 2MeV
     }
   else if  (isotopeName=="Ca" || isotopeName=="ca" || isotopeName=="CA")
     {
@@ -157,8 +159,10 @@ TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additiona
 int main()
 { 
   IsotopeSample *se_sample= new IsotopeSample("Se");
-  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
+  MakePlotsForIsotope("/Users/cpatrick/uclnemo2/MCC1_0/se82_0nubb/se82_0nubb_10M_sensitivity.root", "/Users/cpatrick/uclnemo2/MCC1_0/se82_2nubb/se82_2nubb_10M_sensitivity.root", se_sample);
+//  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
 
+  
   // IsotopeSample *ca_sample= new IsotopeSample("Ca");
   //  MakePlotsForIsotope("/Users/cpatrick/Dropbox/SuperNEMO/sensitivity/rootfiles/ca48_0nubb_100k_sensitivity.root", "/Users/cpatrick/Dropbox/SuperNEMO/sensitivity/rootfiles/ca48_2nubbHE_1M_sensitivity.root", ca_sample);
   
@@ -205,9 +209,9 @@ void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSamp
   
   MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "", "No track charge requirement", "no_electron_cut", sample);
 
-  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.external_probability<0.04 && sensitivity.internal_probability>0.01", "No charge requirement, NEMO3 internal/external prob cuts", "no_electron_cut_int_ext_prob", sample);
+  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04", "No charge requirement, NEMO3 internal/external prob cuts", "no_electron_cut_int_ext_prob", sample);
   
-  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2 && sensitivity.external_probability<0.04 && sensitivity.internal_probability>0.01", "Two -ve tracks,  NEMO3 internal/external prob cuts", "two_electron_int_ext_prob", sample);
+  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2 && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04", "Two -ve tracks,  NEMO3 internal/external prob cuts", "two_electron_int_ext_prob", sample);
   return;
 }
 
@@ -271,29 +275,34 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
 
   // #### Background isotopes go here
 
-   // target is 2 uBq/kg (J Mott thesis)
-  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 2.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/tl208_foil_sensitivity.root","foils"));
+// Newest measurement 370uBq total
+  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/Users/cpatrick/uclnemo2/MCC1_0/Tl208_foil/tl208_foil_5M_sensitivity.root","foils"));
+     // target is 2 uBq/kg (J Mott thesis)
+//  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 2.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/tl208_foil_sensitivity.root","foils"));
 
   // From docDB 3947: 2200 uBq/kg * 7kg = 15400 uBq
   // However target is 10 uBq/kg (J Mott thesis)
   // (HOW ARE THESE SO DIFFERENT?) so try that for now
-  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 10.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_foil_sensitivity.root","foils"));
-
-  // From docDB 3947: Bi214 in mylar 210 uBq/kg * .88kg = 180uBq
-  // Calculated in docDB 3244 slide 22
-  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 180.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_surf_sensitivity.root","foil_surface"));
-
+  // Using Dave's "typical measurement 300uBq per kilo"
+  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/Users/cpatrick/uclnemo2/MCC1_0/Bi214_foil/bi214_foil_5M_sensitivity.root","foils"));
   
-  // Tl208 in mylar 34.2 uBq/kg * .88kg = 30uBq
-  // Calculated in docDB 3244 slide 21, mass of mylar from docDB 3947
-  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 30.1,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/tl208_surf_sensitivity.root","foil_surface"));
-
-  // Bi214 in the tracker itself.
-  // A gas flow-through rate will be picked to get the radon activity to the target of
-  // 0.15 mBq/m^3 (That looks like it will require 2m^3/hour of flow)
-  // Total activity is 0.15mBq times the volume of the tracker (4 C sections)
-  // Each tracker section is 3.8 m3
-  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 150.*4.*3.8,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_wires_sensitivity.root","wires"));
+ // backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 10.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_foil_sensitivity.root","foils"));
+//
+//  // From docDB 3947: Bi214 in mylar 210 uBq/kg * .88kg = 180uBq
+//  // Calculated in docDB 3244 slide 22
+//  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 180.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_surf_sensitivity.root","foil_surface"));
+//
+//  
+//  // Tl208 in mylar 34.2 uBq/kg * .88kg = 30uBq
+//  // Calculated in docDB 3244 slide 21, mass of mylar from docDB 3947
+//  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 30.1,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/tl208_surf_sensitivity.root","foil_surface"));
+//
+//  // Bi214 in the tracker itself.
+//  // A gas flow-through rate will be picked to get the radon activity to the target of
+//  // 0.15 mBq/m^3 (That looks like it will require 2m^3/hour of flow)
+//  // Total activity is 0.15mBq times the volume of the tracker (4 C sections)
+//  // Each tracker section is 3.8 m3
+//  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 150.*4.*3.8,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_wires_sensitivity.root","wires"));
   
   for (int i=0;i<backgroundIsotopes.size();i++)
     {
@@ -593,16 +602,16 @@ int CalculateEfficiencies(TTree *tree,  IsotopeSample *sample, bool is2nubb, int
   cout<<"Tracks have associated calorimeter hits: "<<(double)passesAssociatedCalCut/(double)totalEntries * 100<<"%"<<endl;
 
   // Passes NEMO3 internal/external probability cuts
-  int passesProbabilityCut=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.external_probability<0.04 && sensitivity.internal_probability>0.01 ");
+  int passesProbabilityCut=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 ");
   cout<<"And passes internal/external probability cut: "<<(double)passesProbabilityCut/(double)totalEntries * 100<<"%"<<endl;
 
   // Passes NEMO3 internal/external probability cuts, 2-3.2 MeV
-  int passesProbabilityAndRoI=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.external_probability<0.04 && sensitivity.internal_probability>0.01 &&  (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>=2 &&   (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)< 3.2");
+  int passesProbabilityAndRoI=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 &&  (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>=2 &&   (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)< 3.2");
   cout<<"Passes internal/external probability in Se82ROI: "<<(double)passesProbabilityAndRoI/(double)totalEntries * 100<<"%"<<endl;
 
   // And both tracks have negative charge reconstruction
   
-  int passesTwoElectronCut=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.number_of_electrons==2  && sensitivity.external_probability<0.04 && sensitivity.internal_probability>0.01 &&  (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>=2 &&   (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)< 3.2");
+  int passesTwoElectronCut=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.number_of_electrons==2  && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 &&  (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)>=2 &&   (sensitivity.lower_electron_energy+sensitivity.higher_electron_energy)< 3.2");
   cout<<"And both tracks have negative charge: "<<(double)passesTwoElectronCut/(double)totalEntries * 100<<"%"<<endl;
   
   return totalEntries;
