@@ -52,6 +52,8 @@ typedef struct SensitivityEventStorage{
   double true_highest_primary_energy_;
   double true_second_primary_energy_;
   double true_total_energy_;
+  int true_higher_particle_type_;
+  int true_lower_particle_type_;
 
   // Get vertex position of up to two tracks in mm
   double first_vertex_x_; // Foil is at x ~ 0, main calo walls are at +/- 434.994 mm according to flvisualize
@@ -109,6 +111,9 @@ typedef struct SensitivityEventStorage{
   int track_count_; // How many reconstructed tracks?
   int associated_track_count_; // How many reconstructed tracks with an associated calorimeter?
   int alpha_count_; // How many reconstructed alphas (ie delayed hits)?
+  double alpha_track_length_;
+  double proj_track_length_alpha_;
+  int delayed_cluster_hit_count_; //How many gieger hits in the alpha track
   int foil_alpha_count_; //How many reconstructed alphas (ie delayed hits) that we think have a vertex on the foil?
   double latest_delayed_hit_; // Time of the latest delayed hit (if any)
   double small_cluster_count_; // How many clusters with 2 hits?
