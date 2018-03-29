@@ -23,3 +23,9 @@ Index of projects:
     * *Experiment:* SuperNEMO (Half Commissioning)
     * *Uses:* Cadfael, Bayeux, Falaise, ROOT
     * *Summary:* Sort and analyze data produced by flsimulate in the geometry Half Commissioning. For sorting, you have to give rules to the ID_selector to inhibit or not detectors (Optical Module and Geiger Cells). Then the sorted data can be analyzed and some ROOT histos are plot (programs is very preliminary, has to be improved). It embeds some scripts, specially for CCLyon.
+
+* **ROOT-tools**
+    * *Language:* C++
+    * *Experiment:* SuperNEMO
+    * *Uses:* ROOT
+    * *Summary:* Any usefull ROOT macros proving generic tools for analysis.
