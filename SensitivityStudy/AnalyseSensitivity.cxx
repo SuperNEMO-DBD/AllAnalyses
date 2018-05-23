@@ -15,8 +15,18 @@
 using namespace std;
 
 double AVOGADRO=6.022140e23;
+// !!!! We have changed the variable names in SensitivityModule
+// ??? We will possibly want to review this standard cut at some point
+// For a start we need to change to the new SensitivityModule var names
+// We might also want to change to things like topology_2e (but check what that means)
+// In the longer term we might want to make other changes eg require a (common, or 2 individual) vertex on the foil
 string MAINCUT= "sensitivity.number_of_electrons==2 && sensitivity.passes_two_calorimeters && sensitivity.passes_associated_calorimeters && (sensitivity.higher_electron_energy != sensitivity.lower_electron_energy)";
+// ??? These numbers are the sort of thing we might vary with machine learning or at least look at adapting
 string PROBCUT ="&& sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04";
+
+
+// I use this to store static info about 82Se, 150Nd, 48Ca. Only stuff that never changes
+// So things like names and molar mass
 
 class Isotope {
   int molarMass_;
@@ -42,6 +52,10 @@ void Isotope::Initialize(string isotopeName, int molarMass)
   this->SetIsotopeName(isotopeName);
   this->SetMolarMass(molarMass);
 }
+
+// This is just a class to hold static info about the background isotope samples
+// We  set the activities here
+// ?? We probably want to make a version of this that just updates activity so we can vary them
 
 class BackgroundIsotope : public Isotope{
   double activityMicroBq_;
@@ -70,7 +84,15 @@ BackgroundIsotope::BackgroundIsotope(string isotopeName, int molarMass, double a
 {
   this->Initialize(isotopeName, molarMass, activityMicroBq, rootFileName, isotopeLocation);
 }
-  
+
+// !! This is ALSO stuff about the isotope sample, but it is stuff that can vary with a sample
+// So things like how much isotope we want to use, what our best estimate 2nu halflife is
+// how much exposure we are talking about
+// !!! It no longer makes sense to me that the exposure is here. I don't recall why I did that
+// The fraction of events thing is cos I used to generate only 2nu events with a total energy > 2MeV
+// but when you calculate the efficiency you need to include a correction for all the stuff that you
+// ignored cos it never even made it into the generated sample
+// !!! I am not sure if you can do that with new falaise, it is on the wish list but we should check
 class IsotopeSample : public Isotope{
 
   double backgroundHalfLife_, exposureYears_, minEnergy_,  maxEnergy_ ,fractionOfEventsIn2bbSample_, isotopeMassKg_;
@@ -146,6 +168,8 @@ void IsotopeSample::Initialize (string isotopeName, int molarMass, double isotop
   this->Print();
 }
 
+// Main code is from here on out
+
 int CalculateEfficiencies(TTree *tree,  IsotopeSample *sample, bool is2nubb=false, int allEntries=0);
 TH1D* PlotEfficiency(TTree *tree, double totalEntries, string additionalCut, double minEnergy, double maxEnergy);
 double EstimateHalflifeSensitivity  (double signalEfficiency, double backgroundEfficiency, IsotopeSample *sample);
@@ -161,10 +185,10 @@ TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additiona
 int main()
 { 
   IsotopeSample *se_sample= new IsotopeSample("Se");
+  // !!!!! You need to provide a 0nu and a 2 nu file here
   MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/se82_0nubb_10M_sensitivity.root", "/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/se82_2nubb_10M_sensitivity.root", se_sample);
 //  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
 
-  
   // IsotopeSample *ca_sample= new IsotopeSample("Ca");
   //  MakePlotsForIsotope("/Users/cpatrick/Dropbox/SuperNEMO/sensitivity/rootfiles/ca48_0nubb_100k_sensitivity.root", "/Users/cpatrick/Dropbox/SuperNEMO/sensitivity/rootfiles/ca48_2nubbHE_1M_sensitivity.root", ca_sample);
   
@@ -173,6 +197,7 @@ int main()
    
 }
 
+// This makes the individual background plots to go on the total sensitivity plot
 TH1D* PlotBackgroundIsotopeEfficiency(BackgroundIsotope *bgIsotope, string additionalCut, double minEnergy, double maxEnergy)
 {
   TFile *f = new TFile((bgIsotope->GetRootFileName()).c_str());
@@ -184,7 +209,8 @@ TH1D* PlotBackgroundIsotopeEfficiency(BackgroundIsotope *bgIsotope, string addit
   return efficiency;
 }
 
-
+// OK this is the main meat of it
+// We pass in the 0nu and 2nu reconstructed file path/names
 void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSample *sample)
 {
   TFile *f0nubb=new TFile( filename0nubb.c_str());
@@ -209,6 +235,7 @@ void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSamp
 
   //MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons>=1", "One or more negatively charged tracks required", "one_electron_cut", sample);
   
+  // ??? I'm not sure that this is necessarily instructive, but this mechanism allows us to make a bunch of cuts where we add additional cuts to the standard set. Ib this case I am turning on and off the NEMO 3 probability cuts. We might want to turn on and off things like the negative charge requirement, or some kind of vertex separation cut
   MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, PROBCUT, "No charge requirement, NEMO3 internal/external prob cuts", "no_electron_cut_int_ext_prob", sample);
   
   MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "", "No probability cuts", "no_electron_cut", sample);
@@ -218,6 +245,7 @@ void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSamp
   return;
 }
 
+// This is the energy plot for an individual background isotope with whatever cuts you are using
 TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additionalCut, double minEnergy, double maxEnergy)
 {
   TFile *f = new TFile((bgIsotope->GetRootFileName()).c_str());
@@ -233,12 +261,15 @@ TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additiona
   return energyPlot;
 }
 
+// More of the main meat. We run this for each cut set
 void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tree2nubb, double totalEntries2nubb, string extraCut, string cutTitle, string cutFilenameSuffix, IsotopeSample *sample)
 {
+  // This is to get us 50keV bins
   int nbins=(int)((sample->GetMaxEnergy()*20-sample->GetMinEnergy()*20));
 
   TCanvas *c = new TCanvas("supernemo","supernemo",900,600);
   
+  // Plot the 0nubb energy spectrum for our cut set
   TH1D *energy0nubb=new TH1D("energy0nuBB","energy0nuBB",nbins,sample->GetMinEnergy(),sample->GetMaxEnergy());
   energy0nubb->SetLineColor(kBlack);
   energy0nubb->GetXaxis()->SetTitle("E_{1}+E_{2} (MeV)");
@@ -250,6 +281,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   tree0nubb->Draw("(sensitivity.total_calorimeter_energy)>>energy0nuBB",totalcut.c_str(),"HIST");
 //  tree0nubb->Draw("(sensitivity.total_calorimeter_energy)>>energy0nuBB",("sensitivity.number_of_electrons==2 && sensitivity.passes_two_calorimeters && sensitivity.passes_associated_calorimeters && (sensitivity.higher_electron_energy != sensitivity.lower_electron_energy) "+extraCut ).c_str(),"HIST");
   
+  // And the 2nubb
   TH1D *energy2nubb=new TH1D("energy2nuBB","energy2nuBB",nbins,sample->GetMinEnergy(),sample->GetMaxEnergy());
 
   energy2nubb->SetLineColor(kRed);
@@ -258,6 +290,8 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   energy2nubb->Scale(energy0nubb->Integral()/energy2nubb->Integral());
   c->SaveAs(("plots/"+sample->GetIsotopeName()+sample->GetMolarMassText()+"_energy_"+cutFilenameSuffix+".png").c_str());
 
+  // Then we make an efficiency plot for each of them
+  // By which I mean, the efficiency of reconstructing the events with a minimum energy cut, vs the cut energy
   TH1D *efficiency0nubb=PlotEfficiency(tree0nubb,totalEntries0nubb,extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy());
 
   TH1D *efficiency2nubb=PlotEfficiency(tree2nubb,totalEntries2nubb,extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy());
@@ -289,7 +323,11 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   std::vector<BackgroundIsotope*> backgroundIsotopes;
 
   // #### Background isotopes go here
-
+// !!!! This is where we set the background activities. We also pass in the paths to the background samples here
+// Apparently the last time I did this I only used Tl and Bi in the bulk
+  // As you can see I was v confused about what activities to use
+  // We can add more in here you can see the examples of where I have in the past tried to use surface and tracker samples. But the numbers I used were bizarre and wrong so I commented them out.
+  
 // Newest measurement 370uBq total
   backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/tl208_foil_5M_sensitivity.root","foils"));
      // target is 2 uBq/kg (J Mott thesis)
@@ -319,6 +357,8 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
 //  // Each tracker section is 3.8 m3
 //  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 150.*4.*3.8,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_wires_sensitivity.root","wires"));
   
+  
+  // Now it loops through and draws them all
   for (int i=0;i<backgroundIsotopes.size();i++)
     {
       backgroundIsotopeEfficiencies.push_back(PlotBackgroundIsotopeEfficiency(backgroundIsotopes.at(i),extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy()));
@@ -326,6 +366,8 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
     }
   
   // Use the efficiencies to calculate a sensitivity
+  
+  // ??? It is a long time since I have looked at this. I tried to steal from James Mott. It does something that is not crazy, but I am sure we can do better if we try harder to understand it. We should review it and see what we can improve. I understand the point of this a lot better now than I did when I wrote this code. But it should at least do SOMETHING.
   
   TH1D *sensitivity=EstimateSensitivity(energy0nubb, energy2nubb,sample,efficiency0nubb,efficiency2nubb);
   c->SetLogy(false);
@@ -409,7 +451,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   c->SetLogy(false);
 }
 
-
+// Just a formatting thing to make a nice efficiency plot
 TH1D* PlotEfficiency(TTree *tree, double totalEntries, string additionalCut, double minEnergy, double maxEnergy)
 {
   int nbins=(int)((maxEnergy*20)-(minEnergy*20));
@@ -432,6 +474,7 @@ TH1D* PlotEfficiency(TTree *tree, double totalEntries, string additionalCut, dou
   
 }
 
+// ?? We should review this and understand what I did here, because I cannot really remember. I stole it from James Mott
 TH1D* EstimateSensitivity(TH1D *energy0nubb, TH1D *energy2nubb, IsotopeSample *sample, TH1D* efficiency0nubb, TH1D* efficiency2nubb)
 {
   
@@ -589,6 +632,9 @@ double EstimateBackgroundEvents(double backgroundEfficiency, IsotopeSample *samp
   return events;
 }
 
+
+// !! All of these branch names are old and will not work with new SensitivityModule
+// This just outputs some efficiencies as numbers. It is a lot quicker to run than the sensitivity bit so we can start off just trying to get this bit going and then add the sensitivity stuff later. It is just looking at sequential cuts. It is completely separate from the rest of the code that uses the cuts we set at the top of this file.
 int CalculateEfficiencies(TTree *tree,  IsotopeSample *sample, bool is2nubb, int allEntries)
 {
   // Reconstructable events
@@ -623,6 +669,8 @@ int CalculateEfficiencies(TTree *tree,  IsotopeSample *sample, bool is2nubb, int
   cout<<"And passes internal/external probability cut: "<<(double)passesProbabilityCut/(double)totalEntries * 100<<"%"<<endl;
 
   // Passes NEMO3 internal/external probability cuts, 2-3.2 MeV
+  // ??? Why do I have 2-3.2 as my RoI?!? This could be more interesting with e.g. 2.65-3.2
+  
   int passesProbabilityAndRoI=tree->GetEntries("sensitivity.passes_two_calorimeters && sensitivity.passes_two_clusters && sensitivity.passes_two_tracks && sensitivity.passes_associated_calorimeters && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04 &&  (sensitivity.total_calorimeter_energy)>=2 &&   (sensitivity.total_calorimeter_energy)< 3.2");
   cout<<"Passes internal/external probability in Se82ROI: "<<(double)passesProbabilityAndRoI/(double)totalEntries * 100<<"%"<<endl;
 
