@@ -29,3 +29,4 @@
 *.app
 
 SensitivityStudy/#.gitignore#
+SensitivityStudy/SensitivityModule-build/*
