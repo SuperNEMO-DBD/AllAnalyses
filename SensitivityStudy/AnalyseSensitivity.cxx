@@ -15,9 +15,12 @@
 using namespace std;
 
 double AVOGADRO=6.022140e23;
+// For a complete analysis there should be a cut on the vertex separation too, at the very least. These are sensitivity module branches
 string MAINCUT= "sensitivity.number_of_electrons==2 && sensitivity.passes_two_calorimeters && sensitivity.passes_associated_calorimeters && (sensitivity.higher_electron_energy != sensitivity.lower_electron_energy)";
+// check these numbers are the right way round
 string PROBCUT ="&& sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04";
 
+// This class is to set up a source isotope eg Se82. This allows you to calculate sensitivities for different detector configs
 class Isotope {
   int molarMass_;
   string isotopeName_;
@@ -42,6 +45,8 @@ void Isotope::Initialize(string isotopeName, int molarMass)
   this->SetIsotopeName(isotopeName);
   this->SetMolarMass(molarMass);
 }
+
+// Background isotopes could be Bi214 or Tl208 in the foil or radon in the tracker
 
 class BackgroundIsotope : public Isotope{
   double activityMicroBq_;
@@ -91,7 +96,10 @@ class IsotopeSample : public Isotope{
   void SetIsotopeMassKg  (double val){isotopeMassKg_=val;}
   void SetMinEnergy (double val){minEnergy_=val;}
   void SetMaxEnergy (double val){maxEnergy_=val;}
-  void SetFractionOfEventsIn2bbSample (double val){fractionOfEventsIn2bbSample_=val;}
+  void SetFractionOfEventsIn2bbSample (double val){fractionOfEventsIn2bbSample_=val;} 
+  // I used this so I could make a cut on true energy in the 2nubb simulation. That allows me to use a smaller simulated file
+  // that doesn't include events I would cut anyway. If you simulate like this, you can get the fraction of the total
+  // spectrum that was retained from the brio file. Put that number in here. If you seimulate a full spectrum, it is 1.
 
   void Print();
   
@@ -108,15 +116,21 @@ IsotopeSample::IsotopeSample(string isotopeName)
   if (isotopeName=="Se" || isotopeName=="se" || isotopeName=="SE")
     {
 //      this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,4.39912675943585491e-02);
-      
+      // This is hardcoding some standard number for an Se82 sample
+    // Element Se
+    // Atomic mass 82
+    // 2nubb Halflife 10.07e19 years - this is probably out of date
+    // 2.5 years run time
+    //2 - 3.2 MeV range to look at
+    // We retained 0.04... fraction of the full spectrum in our 2MeV+ sample
       this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,0.0440500); // get fraction with true total energy over 2MeV
     }
   else if  (isotopeName=="Ca" || isotopeName=="ca" || isotopeName=="CA")
-    {
+    { // Defaults for a Ca48 sample with a true energy cut on the 2nubb halflife
       this->Initialize("Ca",48,7.,4.3e19,2.5,3.2,4.4,9.41579993091566821e-03);
     }
   else if (isotopeName=="nd"|| isotopeName=="Nd" || isotopeName=="ND")
-    {
+    {// Defaults for a Nd150 sample  with a true energy cut on the 2nubb halflife
       this->Initialize("Nd",150,7.,9.1e18,2.5,2.2,3.5,3.17395699176686516e-02);
     }
   else
@@ -161,6 +175,7 @@ TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additiona
 int main()
 { 
   IsotopeSample *se_sample= new IsotopeSample("Se");
+  // I've hardcoded this so obviously you will need to change it
   MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/se82_0nubb_10M_sensitivity.root", "/Users/cpatrick/SuperNEMO/MCC1_0_rootfiles/se82_2nubb_10M_sensitivity.root", se_sample);
 //  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
 
