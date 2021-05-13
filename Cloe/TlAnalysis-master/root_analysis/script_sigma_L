@@ -1,0 +1,17 @@
+#!/bin/bash
+
+rm Flatness/flatness_Pint.txt
+rm flatness_Pint.txt
+
+echo $i
+
+for ((j=10;j<101;j+=5))
+
+do
+    i=$j*0.001
+    echo $i
+    root -l -b -q root_extract.cc\(0.,$i,\"0nubb\",0\)
+
+done
+
+mv flatness_Pint.txt Flatness

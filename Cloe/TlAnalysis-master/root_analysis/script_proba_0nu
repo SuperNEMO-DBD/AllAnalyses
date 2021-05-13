@@ -1,0 +1,13 @@
+#!/bin/bash
+
+rm efficiency_proba_0nubb.txt
+
+echo $i
+
+for ((j=0;j<45;j+=5))
+
+do
+    i=$j*0.01
+    root -l -b -q root_extract.cc\($i,0.0278,\"0nubb\",0,0,1\)
+
+done

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for ((j=0;j<5;j+=1))
+
+do
+    root -l -b -q efficiency_cut_delta_t.cc\(\"$j\"\)
+
+done

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+rm efficiency_delta_t_208Tl.txt
+
+echo $i
+
+for ((j=0;j<45;j+=5))
+
+do
+    i=$j*0.01
+    root -l -b -q root_extract.cc\($i,0.0278,\"208Tl\",0,1,0\)
+
+done

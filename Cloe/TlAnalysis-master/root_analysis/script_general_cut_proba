@@ -1,0 +1,21 @@
+#!/bin/bash
+
+
+
+for ((i=3;i<5;i++))
+do
+
+    j=$((10**9 * $i/10))e-9
+
+    echo "test general sigma = $i"
+
+    sed "s|@JobNb|$j|g" script_cut_proba_0nu > job_cut_proba_0nu
+    sed "s|@JobNb|$j|g" script_cut_proba_Tl > job_cut_proba_Tl
+
+    source job_cut_proba_0nu
+    source job_cut_proba_Tl
+
+    mv efficiency_cut_proba_0nubb.txt efficiency_cut_proba/efficiency_cut_proba_0nubb_$i.txt
+    mv efficiency_cut_proba_208Tl.txt efficiency_cut_proba/efficiency_cut_proba_208Tl_$i.txt
+
+done

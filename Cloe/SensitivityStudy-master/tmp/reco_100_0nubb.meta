@@ -1,0 +1,97 @@
+# List of sections of configuration properties (datatools::multi_properties)
+
+#@description Metadata associated to a flreconstruct run
+#@key_label "name"
+#@meta_label "type"
+
+[name="flreconstruct" type="flreconstruct::section"]
+
+#@config flreconstruct basic system informations
+
+
+
+#@description The flreconstruct application used to produce reconstructed data
+application : string = "flreconstruct"
+
+
+
+#@description The version of the reconstruction application
+application.version : string = "3.2.0"
+
+
+
+#@description Bayeux version
+bayeux.version : string = "3.2.0"
+
+
+
+#@description Metadata embedding flag
+embeddedMetadata : boolean = 0
+
+
+
+#@description Experimental setup URN
+experimentalSetupUrn : string = "urn:snemo:demonstrator:setup:1.0"
+
+
+
+#@description Falaise version
+falaise.version : string = "3.2.0"
+
+
+
+#@description Falaise commit
+falaise.version.commit : string = "543c40d3"
+
+
+
+#@description Falaise commit state
+falaise.version.state : boolean = 1
+
+
+
+#@description User profile
+userProfile : string = "normal"
+
+
+[name="flreconstruct.variantService" type="flreconstruct::section"]
+
+#@config Variant setup
+
+
+
+#@description Variants setup configuration URN
+configUrn : string = "urn:snemo:demonstrator:setup:1.0:variants"
+
+
+
+#@description Variants profile path
+profile : string as path  = "$CONFIG/vprofile.conf"
+
+
+[name="flreconstruct.services" type="flreconstruct::section"]
+
+#@config Services configuration
+
+
+
+#@description Services setup configuration path
+config : string as path  = "$CONFIG/services.conf"
+
+
+[name="flreconstruct.pipeline" type="flreconstruct::section"]
+
+#@config Reconstruction setup parameters
+
+
+
+#@description Reconstruction setup main configuration file
+config : string as path  = "$CONFIG/pipeline_modules.defs"
+
+
+
+#@description Reconstruction pipeline top module
+module : string = "pipeline"
+
+
+# End of list of sections of configuration properties (datatools::multi_properties)

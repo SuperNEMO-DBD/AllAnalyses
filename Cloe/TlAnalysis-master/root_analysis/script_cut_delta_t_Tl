@@ -1,0 +1,24 @@
+#!/bin/bash
+
+JobNb=@JobNb
+
+# declare -f l
+
+rm efficiency_cut_delta_t_208Tl.txt
+
+
+for ((k=0;k<70;k+=5))
+
+do
+
+    l=$((10**9 * $k/100))e-9
+
+    echo "test script 208Tl sigma = $l"
+
+    root -l -b -q root_extract.cc\($JobNb,0.0278,\"208Tl\",0,1,0,0,$l\)
+
+
+done
+
+
+root -l -b -q root_extract.cc\($JobNb,0.0278,\"208Tl\",0,0,0,0,0\)

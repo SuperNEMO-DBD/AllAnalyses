@@ -1,0 +1,20 @@
+#!/bin/bash
+
+JobNb=@JobNb
+
+rm efficiency_cut_proba_0nubb.txt
+
+root -l -b -q root_extract.cc\($JobNb,0.0278,\"0nubb\",0\)
+
+for ((k=0;k<100;k+=5))
+
+do
+
+    l=$((10**9 * $k/100))e-9
+
+    echo "test script 0nubb sigma = $l"
+
+    root -l -b -q root_extract.cc\($JobNb,0.0278,\"0nubb\",0,0,1,$l,0\)
+
+
+done

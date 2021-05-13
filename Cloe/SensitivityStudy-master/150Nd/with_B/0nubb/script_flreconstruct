@@ -1,0 +1,8 @@
+#!/bin/bash
+
+JobNb=@JobNb
+
+flreconstruct --pipeline "$CONFIG/Sensitivity/150Nd/with_B/0nubb/flreconstruct.conf" --input-file "/sps/nemo/scratch/simu/ylemiere/damned_sn_reco_36/output_files.d/file_$JobNb.brio"  
+
+cp sd_tree.root "$WORKDIR/Simulations/Sensitivity/150Nd/with_B/0nubb/root_file_$JobNb.root"
+cp final_rate.txt "$WORKDIR/Simulations/Sensitivity/150Nd/with_B/0nubb/event_number_$JobNb.txt"
